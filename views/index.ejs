@@ -1,3 +1,15 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+    <head>
+        <meta charset="utf-8" />
+        <title>Google Maps API v3: Criando um mapa personalizado</title>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script
+    </head>
+ 
+    <body>
+        <!-- Maps API Javascript -->
+
+
 <h1>HELLO WORLD</h1>
 <aside>
 <form method="POST" action="routes/new">
@@ -16,31 +28,51 @@
 </aside>
 
 <% if (result) { %>
-  <% result.forEach((item)=>{ %>
+
+    <% for(let item in result) {%>
     <div>
+    
+     
     <h3>
-      id: <%= item.id%>
-      <%= item.name %> <br/>
-     walk time: <%= item.walk_time %>
-     Said: <%= item.description%><br/> user: 
-     <%= item.user_id%>
-     ratings: 
-     <%= item.ratings%>
-     <%if (item.comments){ %>
-      <%item.comments[0].forEach(comment => {%>
-      <div>
+      <div id="content">
+            id: <%= item%>
+            <%= result[item].name %> <br/>
+           walk time: <%= result[item].walk_time %>
+           Said: <%= result[item].description%><br/> user: 
+           <%= result[item].user_id%>
+           ratings: <br/>
+           <%= result[item].ratings%>
 
-      </div
-      <%})%>
-     <%}%>
+           <%if (result[item].comments){%>
+             <div>
+            <h2>Comments about this Route:</h2>
+            <% result[item].comments.forEach((comment)=>{ %>
+           
+              <h4>"<%=comment%>"</h4>
+            
 
-
+            <%})%>
+            </div>
+            
+           <%}%>
+      </div>
     </h3>
+    <div id="mapa" style="height: 300px; width: 500px">
+    
     </div>
-    <button><a href=<%=`/routes/${item.id}`%>>EDIT</a></button>
-    <form action=<%=`/routes/${item.id}/delete?_method=DELETE`%>  method="POST" >
+    </div>
+    <button><a href=<%=`/routes/${item}`%>>EDIT</a></button>
+    <form action=<%=`/routes/${item}/delete?_method=DELETE`%>  method="POST" >
     <input type="submit" value="DELETE"/></form>
 
-  <% }) %>
+<%}%>
 
 <% } %>
+
+<script src="http://maps.googleapis.com/maps/api/js?key=AIzaSyAtYUmgpgghog7SihlzqQuW4SznV9FJ70w&amp=false"></script>
+ 
+        <!-- Arquivo de inicialização do mapa -->
+        <script src="../scripts/maps.js"></script>
+    </body>
+</html>
+

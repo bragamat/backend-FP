@@ -2,10 +2,10 @@
 exports.up = function(knex, Promise) {
  return Promise.all([
     knex.schema.table('routes', function(table){   
-    table.integer('comment_id').references('id').inTable('comments');
-    table.integer('like_id').references('id').inTable('likes');
-    table.integer('pin_id').references('id').inTable('pins');
-    table.integer('rating_id').references('id').inTable('ratings');
+    // table.integer('comment_id').references('id').inTable('comments');
+    // table.integer('like_id').references('id').inTable('likes');
+    // table.integer('pin_id').references('id').inTable('pins');
+    // table.integer('rating_id').references('id').inTable('ratings');
     table.string('super_spot');
 
 

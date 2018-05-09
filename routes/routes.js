@@ -3,6 +3,8 @@
 
 const express = require('express')
 const router = express.Router()
+const jwt = require('jsonwebtoken')
+const checkAuth = require('../middleware/check-auth.js')
 
 
 module.exports = (knex) => {
@@ -57,7 +59,7 @@ getComments = (id) =>{
   }
 
   postRoute = (data) =>{
-    console.log('WTFFFF ', data)
+    // console.log('WTFFFF ', data)
     return knex('routes')
     .insert({
       name: data.name,
@@ -66,9 +68,11 @@ getComments = (id) =>{
       description: data.description
     }).then((response)=>{
       console.log("coming from postRoute-then", response)
+      return response;
     }).catch((err)=>{
       console.log("coming from postRoute ", err)
     })
+    
   }
 
   deleteRoute = (id) =>{
@@ -88,29 +92,69 @@ getComments = (id) =>{
               id: id,
               name: data.name,
               walk_time: data.walk_time,
-              name: data.name,
               user_id: data.user_id,
               description: data.description
             })
   }
 
+  refactList = (list)=>{
+    loopthrough =(arr)=>{
+      let sum=0;
+      arr.forEach(number=>{
+        sum += number;
+      })
+      return sum;
+    }
+    const haveSeenIt = {}
+    list.forEach(route =>{
+      if(haveSeenIt[route.route_id]){
+        haveSeenIt[route.route_id].comments.push(route.comment);
+
+        haveSeenIt[route.route_id].ratings.push(route.ratings);
+
+      } else {
+        haveSeenIt[route.route_id] = {
+          name: route.name,
+          description: route.description,
+          walk_time: route.walk_time,
+          comments: [route.comment],
+          ratings: [route.rating]
+        }
+      }
+
+
+    })
+    return haveSeenIt;
+  }
+
 
   router.get("/api/all", (req, res)=>{ //API - json
-    getRoutes()
+    // console.log("testing ", checkAuth)
+    knex('routes')
+    .leftJoin('comments', 'routes.id', 'comments.route_id')
+      .leftJoin('ratings', 'routes.id', 'ratings.route_id')
+      .select('routes.id as route_id','routes.description' ,'routes.name', 'routes.walk_time', 'comments.comment', 'ratings.rating as rating')
     .then((result) => {
-          res.json(result)
+      // console.log("to enviado o result assim ===> ", result)
+      const refactoredList = refactList(result)
+      // console.log(refactoredList)
+          res.json(refactoredList)
         })
-        .catch(function(err){
+    .catch(function(err){
+      console.log(err)
           res.send(err)
-        })
+    })
   })
+
   router.post('/api/all/new' , (req,res) =>{
+    // console.log("wtfffff ", req.body)
     postRoute(req.body)
       .then((result) => {
-        res.json(result)
+          // console.log("result comingo from the post route!!! ", result)
+        res.redirect('/api/all')
       })
       .catch((err) =>{
-        res.send(err)
+        res.send("comging from the post api", err)
       })
   })
 
@@ -143,13 +187,21 @@ getComments = (id) =>{
   })
 
   router.get("/", (req,res) => { //root route
-      getRoutes()
-        .then((result) => {
-          res.render('index', {result: result} )
+     knex('routes')
+    .join('comments', 'routes.id', 'comments.route_id')
+      .select('routes.id as route_id','routes.description' ,'routes.name', 'routes.walk_time', 'comments.comment')
+    .then((result) => {
+      // console.log("to enviado o result assim ===> ", result)
+      const refactoredList = refactList(result)
+      // console.log(refactoredList)
+      console.log("to enviado o result assim ===> ", refactoredList)
+      
+          res.render('index', {result: refactoredList})
         })
-        .catch(function(err){
+    .catch(function(err){
+      console.log(err)
           res.send(err)
-        })
+    })
   })
 
   router.get("/:id", (req,res) => {
