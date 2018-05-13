@@ -97,6 +97,15 @@ getComments = (id) =>{
             })
   }
 
+  postComment = (data) =>{
+    return knex('comments')
+      .insert({
+        comment: data.comment,
+        route_id: data.route_id,
+        user_id: data.user_id
+      })
+  }
+
   refactList = (list)=>{
     loopthrough =(arr)=>{
       let sum=0;
@@ -108,17 +117,23 @@ getComments = (id) =>{
     const haveSeenIt = {}
     list.forEach(route =>{
       if(haveSeenIt[route.route_id]){
-        haveSeenIt[route.route_id].comments.push(route.comment);
+        haveSeenIt[route.route_id].comments.push({[route.user_name]: [route.comment]});
 
         haveSeenIt[route.route_id].ratings.push(route.ratings);
 
       } else {
         haveSeenIt[route.route_id] = {
+          id: route.route_id,
           name: route.name,
           description: route.description,
           walk_time: route.walk_time,
-          comments: [route.comment],
+          comments: [{
+            [route.user_name]: [route.comment]}
+            ],
           ratings: [route.rating]
+        }
+        if(!haveSeenIt[route.route_id].ratings){
+          haveSeenIt[route.route_id].ratings.pop() 
         }
       }
 
@@ -127,17 +142,60 @@ getComments = (id) =>{
     return haveSeenIt;
   }
 
+  postMap = (map)=>{
+    return knex('mapsdata')
+      .insert({
+        geocoder_status: map.geocoder_status,
+        route_id: map.route_id
+      })
+  }
 
-  router.get("/api/all", (req, res)=>{ //API - json
+  postMapRoute = (place, mapId) =>{
+    console.log("place =>>> ", place)
+    console.log("mapId =>>> ", mapId)
+
+    return knex('places')
+      .insert({
+        map_id: mapId,
+        place_id: place.place_id
+      }).catch((err)=>{
+        console.log('this error ',err)
+      })
+  }
+
+  router.post('/api/map/new', (req, res) =>{
+    postMap(req.body)
+      .then((result)=>{
+        res.send(200)
+      })
+  })
+
+  router.post('/api/map/:id/new', (req,res)=>{
+    console.log(req.body)
+    console.log(req.params.id)
+
+    postMapRoute(req.body, req.params.id)
+      .then((result)=>{
+        res.send(200) 
+      }).catch((err)=>{
+        console.log(err)
+      })
+  })
+
+  router.get("/api/all", checkAuth, (req, res, next)=>{ //API - json
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     // console.log("testing ", checkAuth)
     knex('routes')
     .leftJoin('comments', 'routes.id', 'comments.route_id')
       .leftJoin('ratings', 'routes.id', 'ratings.route_id')
-      .select('routes.id as route_id','routes.description' ,'routes.name', 'routes.walk_time', 'comments.comment', 'ratings.rating as rating')
+        .leftJoin('users_table', 'comments.user_id', 'users_table.id')
+      .select('users_table.name as user_name', 'routes.id as route_id','routes.description' ,'routes.name', 'routes.walk_time', 'comments.comment', 'ratings.rating as rating')
     .then((result) => {
       // console.log("to enviado o result assim ===> ", result)
       const refactoredList = refactList(result)
       // console.log(refactoredList)
+      console.log(refactoredList)
           res.json(refactoredList)
         })
     .catch(function(err){
@@ -147,7 +205,6 @@ getComments = (id) =>{
   })
 
   router.post('/api/all/new' , (req,res) =>{
-    // console.log("wtfffff ", req.body)
     postRoute(req.body)
       .then((result) => {
           // console.log("result comingo from the post route!!! ", result)
@@ -158,17 +215,28 @@ getComments = (id) =>{
       })
   })
 
+  router.post('/api/:id/comment/new', (req, res) => {
+    console.log(req.body)
+    postComment(req.body)
+      .then((result)=>{
+
+        res.redirect(`/routes/api/all`)
+      }).catch(err=>{
+        console.log(err)
+      })
+  })
+
   router.delete("/api/:id/delete", (req,res)=>{
     deleteRoute(req.params.id)
     .then((result) =>{
-      console.log(result)
+      // console.log(result)
       res.json(result)
       
     })
   })
 
   router.get("/api/:id", (req,res) => {
-      console.log(req.params.id)
+      // console.log(req.params.id)
       getRoute(req.params.id)
         .then((result) => {
           // console.log(result)
@@ -188,30 +256,27 @@ getComments = (id) =>{
 
   router.get("/", (req,res) => { //root route
      knex('routes')
-    .join('comments', 'routes.id', 'comments.route_id')
+      .join('comments', 'routes.id', 'comments.route_id')
       .select('routes.id as route_id','routes.description' ,'routes.name', 'routes.walk_time', 'comments.comment')
-    .then((result) => {
-      // console.log("to enviado o result assim ===> ", result)
-      const refactoredList = refactList(result)
-      // console.log(refactoredList)
-      console.log("to enviado o result assim ===> ", refactoredList)
-      
-          res.render('index', {result: refactoredList})
-        })
-    .catch(function(err){
+      .then((result) => {
+        const refactoredList = refactList(result)
+        console.log("to enviado o result assim ===> ", refactoredList)
+            res.render('index', {result: refactoredList})
+      })
+      .catch(function(err){
       console.log(err)
           res.send(err)
     })
   })
 
   router.get("/:id", (req,res) => {
-      console.log(req.params.id)
+      // console.log(req.params.id)
       getRoute(req.params.id)
 
         .then((result) => {
           // console.log(result)
           res.render('showRoute', {result: result})
-          console.log(result)
+          // console.log(result)
         })
         .catch(function(err){
           res.send(err)
@@ -221,7 +286,7 @@ getComments = (id) =>{
   router.delete("/:id/delete", (req,res)=>{
     deleteRoute(req.params.id)
     .then((result) =>{
-      console.log(result)
+      // console.log(result)
       res.redirect('/routes')
       
     })

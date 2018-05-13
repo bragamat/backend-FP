@@ -12,7 +12,7 @@
 
 <h1>HELLO WORLD</h1>
 <aside>
-<form method="POST" action="routes/new">
+<form method="POST" action="routes/new">                                                               
   <input type="text" name="name" placeholder="Paths name">
   <input type="number" name="walk_time" placeholder="walk time">
   <input type="text" name="user_id" placeholder="user_id">
@@ -57,9 +57,10 @@
            <%}%>
       </div>
     </h3>
-    <div id="mapa" style="height: 300px; width: 500px">
-    
-    </div>
+
+
+    <div id="mapa" style="height: 300px; width: 500px"></div>
+
     </div>
     <button><a href=<%=`/routes/${item}`%>>EDIT</a></button>
     <form action=<%=`/routes/${item}/delete?_method=DELETE`%>  method="POST" >
@@ -69,7 +70,7 @@
 
 <% } %>
 
-<script src="http://maps.googleapis.com/maps/api/js?key=AIzaSyAtYUmgpgghog7SihlzqQuW4SznV9FJ70w&amp=false"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAtYUmgpgghog7SihlzqQuW4SznV9FJ70w&amp=false"></script>
  
         <!-- Arquivo de inicialização do mapa -->
         <script src="../scripts/maps.js"></script>

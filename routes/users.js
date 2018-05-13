@@ -44,7 +44,7 @@ module.exports = (knex) => {
 
   doLogin = (data)=>{
     return knex('users_table')
-        .where({
+        users_table.where({
           name: data.name,
           password: data.password})
           .then((response)=>{
@@ -56,6 +56,8 @@ module.exports = (knex) => {
 
 
   router.get("/", (req,res) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
       getUsers()
         .then((result) => {
           res.json(result);
@@ -72,14 +74,18 @@ module.exports = (knex) => {
     })
   })
 
-  router.post("/new", (req, res)=>{
+  router.post('/new', (req, res)=>{
+    console.log(req.body)
     addUser(req.body)
       .then((response)=>{
-        res.json(response)
+        res.redirect('/users')
       })
   })
 
   router.post('/login', (req, res)=>{
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Authorization")
     doLogin(req.body)
       .then(user =>{
         if(user.length < 1){

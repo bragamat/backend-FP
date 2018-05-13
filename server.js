@@ -13,7 +13,7 @@ const knexConfig  = require("./knexfile");
 const knex        = require("knex")(knexConfig[ENV]);
 const morgan      = require('morgan');
 const knexLogger  = require('knex-logger');
-
+const cors = require('cors');
 // Seperated Routes for each Resource
 const usersRoutes = require("./routes/users");
 const routesRoutes = require("./routes/routes");
@@ -27,6 +27,19 @@ app.use(methodOverride('_method'))
 //         The :status token will be colored red for server error codes, yellow for client error codes, cyan for redirection codes, and uncolored for all other codes.
 app.use(morgan('dev'));
 
+let corsOptions = {}
+if (app.settings.env === 'production') {
+  // Configuration in production mode should be per domain!
+  const corsWhitelist = ['http://example1.com', 'https://example2.com']
+  corsOptions = {
+    origin: (origin, callback) => {
+      if (corsWhitelist.indexOf(origin) !== -1) callback(null, true)
+      else callback(new Error('Not allowed by CORS'))
+    }
+  }
+}
+app.use(cors(corsOptions))
+app.options('*', cors(corsOptions))
 // Log knex SQL queries to STDOUT as well
 app.use(knexLogger(knex));
 

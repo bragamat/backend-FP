@@ -7,7 +7,6 @@ var map;
         mapTypeId: google.maps.MapTypeId.ROADMAP
     };
 function initialize(options) {
-  coord()
 console.log(options.latitude, ' ', options.longitude)
     var latlng = new google.maps.LatLng(options.latitude, options.longitude);
   
