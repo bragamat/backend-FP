@@ -9,16 +9,16 @@ const checkAuth = require('../middleware/check-auth.js')
 
 module.exports = (knex) => {
 
-getComments = (id) =>{
-  return new Promise(function (resolve, reject){
-    knex
-      .select('comment')
-      .from('comments')
-      .where('route_id', id)
-        
-      return resolve();
-  })
-}
+  getComments = (id) =>{
+    return new Promise(function (resolve, reject){
+      knex
+        .select('comment')
+        .from('comments')
+        .where('route_id', id)
+          
+        return resolve();
+    })
+  }
   getRoutes = () => { //with ratings
     return knex
       .select('*').from('routes')
@@ -85,7 +85,6 @@ getComments = (id) =>{
   updateRoute = (id, data) =>{
     console.log("id ", id)
     console.log("data  ", data)
-
     return knex('routes')
       .where('id', id)
             .update({
@@ -106,7 +105,14 @@ getComments = (id) =>{
       })
   }
 
+  deleteComment = (comment_id) =>{
+    return knex('comments')
+      .where('id', comment_id)
+        .delete()
+  }
+
   refactList = (list)=>{
+    console.log("receiving data as this=>>>> ", list)
     loopthrough =(arr)=>{
       let sum=0;
       arr.forEach(number=>{
@@ -118,6 +124,7 @@ getComments = (id) =>{
     list.forEach(route =>{
       if(haveSeenIt[route.route_id]){
         haveSeenIt[route.route_id].comments.push({[route.user_name]: [route.comment]});
+        haveSeenIt[route.route_id].mapsdata.push(route.place_id);
 
         haveSeenIt[route.route_id].ratings.push(route.ratings);
 
@@ -127,6 +134,8 @@ getComments = (id) =>{
           name: route.name,
           description: route.description,
           walk_time: route.walk_time,
+          mapsdata_id: route.mapsdata,
+          mapsdata: [route.place_id],
           comments: [{
             [route.user_name]: [route.comment]}
             ],
@@ -163,6 +172,18 @@ getComments = (id) =>{
       })
   }
 
+  router.delete("/api/:id/comment/:comment_id/delete", (req,res)=>{
+    deleteComment(req.params.comment_id)
+    .then((result) =>{
+      // console.log(result)
+      res.json(result)
+      
+    }).catch(err=>{
+      console.log(err)
+    })
+  })
+
+
   router.post('/api/map/new', (req, res) =>{
     postMap(req.body)
       .then((result)=>{
@@ -182,7 +203,7 @@ getComments = (id) =>{
       })
   })
 
-  router.get("/api/all", checkAuth, (req, res, next)=>{ //API - json
+  router.get("/api/all", /*checkAuth,*/ (req, res, next)=>{ //API - json
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     // console.log("testing ", checkAuth)
@@ -190,7 +211,9 @@ getComments = (id) =>{
     .leftJoin('comments', 'routes.id', 'comments.route_id')
       .leftJoin('ratings', 'routes.id', 'ratings.route_id')
         .leftJoin('users_table', 'comments.user_id', 'users_table.id')
-      .select('users_table.name as user_name', 'routes.id as route_id','routes.description' ,'routes.name', 'routes.walk_time', 'comments.comment', 'ratings.rating as rating')
+          .leftJoin('mapsdata', 'routes.id','mapsdata.route_id')
+            .leftJoin('places', 'mapsdata.id', 'places.map_id')
+      .select('places.place_id as place_id','mapsdata.id as mapsdata','users_table.name as user_name', 'routes.id as route_id','routes.description' ,'routes.name', 'routes.walk_time', 'comments.comment', 'ratings.rating as rating')
     .then((result) => {
       // console.log("to enviado o result assim ===> ", result)
       const refactoredList = refactList(result)
@@ -258,15 +281,14 @@ getComments = (id) =>{
      knex('routes')
       .join('comments', 'routes.id', 'comments.route_id')
       .select('routes.id as route_id','routes.description' ,'routes.name', 'routes.walk_time', 'comments.comment')
-      .then((result) => {
-        const refactoredList = refactList(result)
-        console.log("to enviado o result assim ===> ", refactoredList)
+        .then((result) => {
+          const refactoredList = refactList(result)
+          console.log("to enviado o result assim ===> ", refactoredList)
             res.render('index', {result: refactoredList})
-      })
-      .catch(function(err){
-      console.log(err)
-          res.send(err)
-    })
+        }).catch(function(err){
+            console.log(err)
+              res.send(err)
+          })
   })
 
   router.get("/:id", (req,res) => {
