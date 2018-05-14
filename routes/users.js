@@ -3,6 +3,53 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken')
+// const aws = require('aws-sdk')
+// const morgan  = require('morgan')
+// const bodyParser  = require("body-parser");
+const multer = require('multer')
+
+const storage = multer.diskStorage({
+  destination: function(req, file, cb) {
+    cb(null, './uploads/');
+  },
+  filename: function(req, file, cb){
+    cb(null, new Date().toISOString() + file.originalname);
+  }
+})
+const upload = multer({ storage });
+
+
+// const config = require('./config.js')
+// const s3 = new aws.S3();
+
+// s3.config.update({
+//   accessKeyId: config.accessKeyId,
+//   secretAccessKey: config.secretAccessKey,
+//   region: 'us-west-2'
+// })
+
+
+
+// app.use(morgan('combined'))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 module.exports = (knex) => {
 
@@ -17,6 +64,7 @@ module.exports = (knex) => {
               id: response[i].id,
               name: response[i].name,
               password: response[i].password,
+              profilePicture: response[i].profilePicture
             };
             users.push(info);
         }
@@ -33,11 +81,12 @@ module.exports = (knex) => {
       });
   }
 
-  addUser = (data)=>{
+  addUser = (data, file)=>{
     return knex('users_table')
       .insert({
         name: data.name,
-        password: data.password
+        password: data.password,
+        profilePicture: file.path
       })
 
   }
@@ -70,13 +119,14 @@ module.exports = (knex) => {
   router.get('/:id', (req,res)=>{
     getUser(req.params.id)
     .then(user=>{
+      console.log(user)
      res.json(user)
     })
   })
 
-  router.post('/new', (req, res)=>{
-    console.log(req.body)
-    addUser(req.body)
+  router.post('/new', upload.single('profilePicture'),(req, res)=>{
+    console.log(req.file)
+    addUser(req.body, req.file)
       .then((response)=>{
         res.redirect('/users')
       })
