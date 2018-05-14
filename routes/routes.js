@@ -15,7 +15,6 @@ module.exports = (knex) => {
         .select('comment')
         .from('comments')
         .where('route_id', id)
-          
         return resolve();
     })
   }
