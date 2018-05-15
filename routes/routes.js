@@ -64,7 +64,6 @@ module.exports = (knex) => {
     })
     
   }
-
   deleteRoute = (id) =>{
     return knex
     .select()
@@ -85,13 +84,11 @@ module.exports = (knex) => {
               description: data.description
             })
   }
-
   deleteComment = (comment_id) =>{
     return knex('comments')
       .where('id', comment_id)
         .delete()
   }
-
   refactList = (list)=>{
     const haveSeenIt = {}
     list.forEach((route, index) =>{
@@ -114,21 +111,22 @@ module.exports = (knex) => {
         }
       }
     }); 
-    commentsA = Object.values(haveSeenIt)[0].comments
-      commentsA.forEach((comment, index) =>{
-        if(Object.keys(comment) == 'null'){
-          delete commentsA[index]
-        }  
-      }); 
-   commentsA = commentsA.filter(x => x)
-   Object.values(haveSeenIt)[0].comments = commentsA
-
-   ratingsA = Object.values(haveSeenIt)[0].ratings.filter(x => x)
-   Object.values(haveSeenIt)[0].ratings = ratingsA
-
-   mapsdataA = Object.values(haveSeenIt)[0].mapsdata.filter(x => x)
-   Object.values(haveSeenIt)[0].mapsdata = mapsdataA
-
+      for(let item in haveSeenIt){
+        for(let key in haveSeenIt[item]){
+          if(key == 'mapsdata'){
+            haveSeenIt[item].mapsdata = haveSeenIt[item].mapsdata.filter(x => x) 
+          } else if (key == 'ratings'){
+            haveSeenIt[item].ratings = haveSeenIt[item].ratings.filter(x => x) 
+          } else if (key == 'comments'){
+             haveSeenIt[item].comments.forEach((comment, index) =>{
+                if(Object.keys(comment) == 'null'){
+                  delete haveSeenIt[item].comments[index]
+                }  
+              }); 
+          }
+          haveSeenIt[item].comments = haveSeenIt[item].comments.filter( x => x) 
+        }
+      }
     return haveSeenIt;
   }
 
