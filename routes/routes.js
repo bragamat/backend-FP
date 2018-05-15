@@ -235,8 +235,7 @@ module.exports = (knex) => {
 
     postComment(req.body, req.params.id)
       .then((result)=>{
-
-        res.json(`/routes/api/all`)
+        res.redirect(`/routes/api/all`)
       }).catch(err=>{
         console.log(err)
       })
@@ -272,8 +271,6 @@ module.exports = (knex) => {
         .select('places.place_id as place_id','mapsdata.id as mapsdata','users_table.name as user_name', 'routes.id as route_id','routes.description' ,'routes.name', 'routes.walk_time', 'comments.comment', 'ratings.rating as rating')
     .then((result) => {
       const refactoredList = refactList(result)
-      // console.log(refactoredList)
-      // console.log(refactoredList)
           res.json(refactoredList)
         })
         .catch(function(err){
