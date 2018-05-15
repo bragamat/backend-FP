@@ -86,15 +86,6 @@ module.exports = (knex) => {
             })
   }
 
-  postComment = (data) =>{
-    return knex('comments')
-      .insert({
-        comment: data.comment,
-        route_id: data.route_id,
-        user_id: data.user_id
-      })
-  }
-
   deleteComment = (comment_id) =>{
     return knex('comments')
       .where('id', comment_id)
@@ -102,37 +93,13 @@ module.exports = (knex) => {
   }
 
   refactList = (list)=>{
-    console.log("receiving data as this=>>>> ", list)
-    loopthrough =(arr)=>{
-      let sum=0;
-      arr.forEach(number=>{
-        sum += number;
-      })
-      return sum;
-    }
     const haveSeenIt = {}
     list.forEach((route, index) =>{
       if(haveSeenIt[route.route_id]){
-        if(route.comments !== undefined){
-
         haveSeenIt[route.route_id].comments.push({[route.user_name]: [route.comment]});
         haveSeenIt[route.route_id].ratings.push(route.ratings);
-        }
         haveSeenIt[route.route_id].mapsdata.push(route.place_id);
-
-
       } else {
-        if(route.comments === null){
-          haveSeenIt[route.route_id] = {
-          id: route.route_id,
-          name: route.name,
-          description: route.description,
-          walk_time: route.walk_time,
-          mapsdata_id: route.mapsdata,
-          mapsdata: [route.place_id],
-          ratings: [route.rating]
-        }
-      }  else {
         haveSeenIt[route.route_id] = {
           id: route.route_id,
           name: route.name,
@@ -146,13 +113,22 @@ module.exports = (knex) => {
           ratings: [route.rating]
         }
       }
-        if(haveSeenIt[route.route_id].ratings === null){
-          haveSeenIt[route.route_id].ratings.pop() 
-        }
-      }
+    }); 
+    commentsA = Object.values(haveSeenIt)[0].comments
+      commentsA.forEach((comment, index) =>{
+        if(Object.keys(comment) == 'null'){
+          delete commentsA[index]
+        }  
+      }); 
+   commentsA = commentsA.filter(x => x)
+   Object.values(haveSeenIt)[0].comments = commentsA
 
+   ratingsA = Object.values(haveSeenIt)[0].ratings.filter(x => x)
+   Object.values(haveSeenIt)[0].ratings = ratingsA
 
-    })
+   mapsdataA = Object.values(haveSeenIt)[0].mapsdata.filter(x => x)
+   Object.values(haveSeenIt)[0].mapsdata = mapsdataA
+
     return haveSeenIt;
   }
 
@@ -165,8 +141,8 @@ module.exports = (knex) => {
   }
 
   postMapRoute = (place, mapId) =>{
-    console.log("place =>>> ", place)
-    console.log("mapId =>>> ", mapId)
+    // console.log("place =>>> ", place)
+    // console.log("mapId =>>> ", mapId)
 
     return knex('places')
       .insert({
@@ -196,8 +172,8 @@ module.exports = (knex) => {
   })
 
   router.post('/api/map/:id/new', (req,res)=>{ //Adding places to the map
-    console.log(req.body)
-    console.log(req.params.id)
+    // console.log(req.body)
+    // console.log(req.params.id)
 
     postMapRoute(req.body, req.params.id)
       .then((result)=>{
@@ -218,8 +194,8 @@ module.exports = (knex) => {
     })
   })
 
-  router.get("/api/all", checkAuth, (req, res, next)=>{ //API - json
-    console.log("this is the checkAuth =>>>> ", checkAuth)
+  router.get("/api/all", /* checkAuth, */ (req, res, next)=>{ //API - json
+    // console.log("this is the checkAuth =>>>> ", checkAuth)
 
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
@@ -235,7 +211,7 @@ module.exports = (knex) => {
       // console.log("to enviado o result assim ===> ", result)
       const refactoredList = refactList(result)
       // console.log(refactoredList)
-      console.log(refactoredList)
+      // console.log(refactoredList)
           res.json(refactoredList)
         })
     .catch(function(err){
@@ -244,12 +220,23 @@ module.exports = (knex) => {
     })
   })
 
+  postComment = (data, route_id) =>{
+    console.log("receiving data like this ",data)
+    return knex('comments')
+      .insert({
+        comment: data.comment,
+        route_id: route_id,
+        user_id: data.user_id
+      })
+  }
   router.post('/api/:id/comment/new', (req, res) => {// Posting a new comment whitin a route
-    console.log(req.body)
-    postComment(req.body)
+    
+    console.log("NEW COMMENT ", req.body)
+
+    postComment(req.body, req.params.id)
       .then((result)=>{
 
-        res.redirect(`/routes/api/all`)
+        res.json(`/routes/api/all`)
       }).catch(err=>{
         console.log(err)
       })
@@ -286,7 +273,7 @@ module.exports = (knex) => {
     .then((result) => {
       const refactoredList = refactList(result)
       // console.log(refactoredList)
-      console.log(refactoredList)
+      // console.log(refactoredList)
           res.json(refactoredList)
         })
         .catch(function(err){
@@ -307,7 +294,7 @@ module.exports = (knex) => {
       .select('routes.id as route_id','routes.description' ,'routes.name', 'routes.walk_time', 'comments.comment')
         .then((result) => {
           const refactoredList = refactList(result)
-          console.log("to enviado o result assim ===> ", refactoredList)
+          // console.log("to enviado o result assim ===> ", refactoredList)
             res.render('index', {result: refactoredList})
         }).catch(function(err){
             console.log(err)

@@ -132,6 +132,7 @@ module.exports = (knex) => {
           {
             expiresIn: '1h'
           })
+    res.header("Authorization", { token })
 
         return res.json({
             message:'Auth Successful',
