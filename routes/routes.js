@@ -218,7 +218,9 @@ module.exports = (knex) => {
     })
   })
 
-  router.get("/api/all", /*checkAuth,*/ (req, res, next)=>{ //API - json
+  router.get("/api/all", checkAuth, (req, res, next)=>{ //API - json
+    console.log("this is the checkAuth =>>>> ", checkAuth)
+
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     // console.log("testing ", checkAuth)

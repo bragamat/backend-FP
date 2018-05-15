@@ -16,6 +16,7 @@ const storage = multer.diskStorage({
     cb(null, new Date().toISOString() + file.originalname);
   }
 })
+
 const upload = multer({ storage });
 
 
@@ -31,25 +32,6 @@ const upload = multer({ storage });
 
 
 // app.use(morgan('combined'))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 module.exports = (knex) => {
 
@@ -145,9 +127,8 @@ module.exports = (knex) => {
         }
      const token = jwt.sign({
           name: user.name,
-          password: user.password
-        }, 
-          'secrete key', 
+          password: user.password}, 
+          'secret_key', 
           {
             expiresIn: '1h'
           })
