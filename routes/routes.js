@@ -468,6 +468,9 @@ module.exports = (knex) => {
       })
   })
   addMarker = (map_id, data, file) =>{
+    if(file === undefined){
+      file = ''
+    }
     return knex('route_markers')
       .insert({
         longitude: data.longitude,
