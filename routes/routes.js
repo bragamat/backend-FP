@@ -101,7 +101,6 @@ module.exports = (knex) => {
 
       } else {
 
-        // 'waypoints.latitude as WLat','waypoints.longitude as WLong'
         haveSeenIt[route.route_id] = {
           id: route.route_id,
           name: route.name,
@@ -137,6 +136,14 @@ module.exports = (knex) => {
           } else if (key == 'ends'){
             haveSeenIt[item].ends = haveSeenIt[item].ends.filter(x => x) 
 
+          } else if (key == 'waypoint'){
+
+            haveSeenIt[item].waypoint.forEach((point, index) =>{
+                if(Object.keys(point) == 'null'){
+                  delete haveSeenIt[item].waypoint[index]
+                }  
+              }); 
+            haveSeenIt[item].waypoint = haveSeenIt[item].waypoint.filter(x => x) 
           }
           haveSeenIt[item].comments = haveSeenIt[item].comments.filter( x => x) 
         }
@@ -186,9 +193,7 @@ module.exports = (knex) => {
   router.delete("/api/:id/comment/:comment_id/delete", (req,res)=>{//deleting comments from the parent route
     deleteComment(req.params.comment_id)
     .then((result) =>{
-      // console.log(result)
-      res.json(result)
-      
+      res.json(result)      
     }).catch(err=>{
       console.log(err)
     })
@@ -253,6 +258,7 @@ module.exports = (knex) => {
         return response;
       })
   }  
+
   router.get("/api/:id", (req,res) => { //get one route at a time
     knex('routes')
     .leftJoin('comments', 'routes.id', 'comments.route_id')
@@ -344,6 +350,27 @@ module.exports = (knex) => {
       })
   })
 
+  deleteStart = (, id) =>{
+  return knex
+    .select()
+    .from('starts')
+    .where('id', '=', id)
+    .delete()
+    .catch(err=>{
+      console.log(err)
+    })
+  }
+
+  router.delete('/api/:id/map/:map_id/start/:start_id/delete', (req, res) => {
+    deleteStart(req.params.start_id)
+      .then(result=>{
+        res.send(202)
+      })
+      .catch(err=>{
+        console.log(err)
+      })
+  })
+
   addEndingPoint = (route_id, map_id, data) =>{
     console.log("receiving data like this ", data, map_id)
     return knex('ends')
@@ -367,6 +394,28 @@ module.exports = (knex) => {
       })
   })
 
+  deleteEnd = (map_id, id) =>{
+  return knex
+    .select()
+    .from('ends')
+    .where('id', '=', id)
+    .delete()
+    .catch(err=>{
+      console.log(err)
+    })
+  }
+
+  router.delete('/api/:id/map/:map_id/end/:end_id/delete', (req,res) =>{
+    deleteEnd(req.params.map_id, req.params.end_id)
+      .then(result =>{
+        res.send(200)
+      })
+      .catch(err=>{
+        console.log(err)
+      })
+  })
+
+
   addWayPoints = (map_id, data) =>{
     return knex('waypoints')
       .insert({
@@ -389,24 +438,26 @@ router.post('/api/:id/map/:map_id/waypoint/new', (req,res) =>{
     })
 })
 
+deleteWayPoints = (map_id, id) =>{
+  return knex
+    .select()
+    .from('waypoints')
+    .where('id', '=', id)
+    .delete()
+    .catch(err=>{
+      console.log(err)
+    })
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+router.delete('/api/:id/map/:map_id/waypoint/:waypoint_id/delete', (req,res) =>{
+  deleteWayPoints(req.params.map_id, req.params.waypoint_id)
+    .then(result =>{
+      res.send(200)
+    })
+    .catch(err=>{
+      console.log(err)
+    })
+})
   return router
 }
 
