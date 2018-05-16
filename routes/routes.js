@@ -96,7 +96,12 @@ module.exports = (knex) => {
         haveSeenIt[route.route_id].comments.push({[route.user_name]: [route.comment]});
         haveSeenIt[route.route_id].ratings.push(route.ratings);
         haveSeenIt[route.route_id].mapsdata.push(route.place_id);
+        haveSeenIt[route.route_id].waypoint.push({[route.WLat]: [route.WLong]});
+
+
       } else {
+
+        // 'waypoints.latitude as WLat','waypoints.longitude as WLong'
         haveSeenIt[route.route_id] = {
           id: route.route_id,
           name: route.name,
@@ -105,7 +110,7 @@ module.exports = (knex) => {
           mapsdata_id: route.mapsdata,
           starts: [route.SLati, route.SLong],
           ends: [route.ELati, route.ELong],
-          waypoint:[43.647986, -79.389184], // hard-coded to help - for now
+          waypoint: [{[route.WLat]: [route.WLong]}], // hard-code
           mapsdata: [route.place_id],
           comments: [{
             [route.user_name]: [route.comment]}
@@ -202,7 +207,8 @@ module.exports = (knex) => {
             .leftJoin('places', 'mapsdata.id', 'places.map_id')
               .leftJoin('starts', 'mapsdata.id', 'starts.map_id')
                 .leftJoin('ends', 'mapsdata.id', 'ends.map_id')
-      .select('ends.longitude as ELong', 'ends.latitude as ELati','starts.latitude as SLati', 'starts.longitude as SLong','places.place_id as place_id','mapsdata.id as mapsdata','users_table.name as user_name', 'routes.id as route_id','routes.description' ,'routes.name', 'routes.walk_time', 'comments.comment', 'ratings.rating as rating')
+                  .leftJoin('waypoints', 'mapsdata.id', 'waypoints.map_id')
+      .select('waypoints.latitude as WLat','waypoints.longitude as WLong','ends.longitude as ELong', 'ends.latitude as ELati','starts.latitude as SLati', 'starts.longitude as SLong','places.place_id as place_id','mapsdata.id as mapsdata','users_table.name as user_name', 'routes.id as route_id','routes.description' ,'routes.name', 'routes.walk_time', 'comments.comment', 'ratings.rating as rating')
     .then((result) => {
       const refactoredList = refactList(result)
           res.json(refactoredList)
@@ -361,7 +367,27 @@ module.exports = (knex) => {
       })
   })
 
+  addWayPoints = (map_id, data) =>{
+    return knex('waypoints')
+      .insert({
+        latitude: data.latitude,
+        longitude: data.longitude,
+        map_id: map_id
+      })
+      .catch(err=>{
+        console.log(err)
+      })
+  }
 
+router.post('/api/:id/map/:map_id/waypoint/new', (req,res) =>{
+  addWayPoints(req.params.map_id, req.body)
+    .then(result =>{
+      res.send(200)
+    })
+    .catch(err=>{
+      console.log(err)
+    })
+})
 
 
 
