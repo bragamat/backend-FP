@@ -105,6 +105,7 @@ module.exports = (knex) => {
           mapsdata_id: route.mapsdata,
           starts: [route.SLati, route.SLong],
           ends: [route.ELati, route.ELong],
+          waypoint:[43.647986, -79.389184], // hard-coded to help - for now
           mapsdata: [route.place_id],
           comments: [{
             [route.user_name]: [route.comment]}
