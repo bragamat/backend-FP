@@ -16,10 +16,7 @@ const storage = multer.diskStorage({
     cb(null, new Date().toISOString() + file.originalname);
   }
 })
-
 const upload = multer({ storage });
-
-
 // const config = require('./config.js')
 // const s3 = new aws.S3();
 
@@ -28,9 +25,6 @@ const upload = multer({ storage });
 //   secretAccessKey: config.secretAccessKey,
 //   region: 'us-west-2'
 // })
-
-
-
 // app.use(morgan('combined'))
 
 module.exports = (knex) => {
@@ -39,7 +33,7 @@ module.exports = (knex) => {
     return knex
       .select('*').from('users_table')
       .then(function (response) {
-        console.log(response);
+        // console.log(response);
         const users = []; // was polls
         for (let i = 0; i < response.length; i++) {
             let info = {
@@ -70,7 +64,6 @@ module.exports = (knex) => {
         password: data.password,
         profilePicture: file.path
       })
-
   }
 
   doLogin = (data)=>{
@@ -84,7 +77,6 @@ module.exports = (knex) => {
             console.log(err)
           })
   }
-
 
   router.get("/", (req,res) => {
     res.header("Access-Control-Allow-Origin", "*");
@@ -101,13 +93,13 @@ module.exports = (knex) => {
   router.get('/:id', (req,res)=>{
     getUser(req.params.id)
     .then(user=>{
-      console.log(user)
+      // console.log(user)
      res.json(user)
     })
   })
 
   router.post('/new', upload.single('profilePicture'),(req, res)=>{
-    console.log(req.file)
+    // console.log(req.file)
     addUser(req.body, req.file)
       .then((response)=>{
         res.redirect('/users')
@@ -132,10 +124,8 @@ module.exports = (knex) => {
           {
             expiresIn: '1h'
           })
-    res.header("Authorization", { token })
-
         return res.json({
-            message:'Auth Successful',
+            message:'Auth successful',
             token: token
           })
       }).catch((err)=>{

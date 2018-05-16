@@ -103,6 +103,8 @@ module.exports = (knex) => {
           description: route.description,
           walk_time: route.walk_time,
           mapsdata_id: route.mapsdata,
+          starts: [route.SLati, route.SLong],
+          ends: [route.ELati, route.ELong],
           mapsdata: [route.place_id],
           comments: [{
             [route.user_name]: [route.comment]}
@@ -123,13 +125,18 @@ module.exports = (knex) => {
                   delete haveSeenIt[item].comments[index]
                 }  
               }); 
+          } else if (key == 'starts'){
+            haveSeenIt[item].starts = haveSeenIt[item].starts.filter(x => x) 
+
+          } else if (key == 'ends'){
+            haveSeenIt[item].ends = haveSeenIt[item].ends.filter(x => x) 
+
           }
           haveSeenIt[item].comments = haveSeenIt[item].comments.filter( x => x) 
         }
       }
     return haveSeenIt;
   }
-
   postMap = (map)=>{
     return knex('mapsdata')
       .insert({
@@ -137,11 +144,7 @@ module.exports = (knex) => {
         route_id: map.route_id
       })
   }
-
   postMapRoute = (place, mapId) =>{
-    // console.log("place =>>> ", place)
-    // console.log("mapId =>>> ", mapId)
-
     return knex('places')
       .insert({
         map_id: mapId,
@@ -150,7 +153,6 @@ module.exports = (knex) => {
         console.log('this error ',err)
       })
   }
-
   router.post('/api/all/new' , (req,res) =>{ // creating a new route
     postRoute(req.body)
       .then((result) => {
@@ -161,18 +163,13 @@ module.exports = (knex) => {
         res.send("comging from the post api", err)
       })
   })
-
   router.post('/api/map/new', (req, res) =>{ // creating a new map
     postMap(req.body)
       .then((result)=>{
         res.send(200)
       })
   })
-
   router.post('/api/map/:id/new', (req,res)=>{ //Adding places to the map
-    // console.log(req.body)
-    // console.log(req.params.id)
-
     postMapRoute(req.body, req.params.id)
       .then((result)=>{
         res.send(200) 
@@ -180,7 +177,6 @@ module.exports = (knex) => {
         console.log(err)
       })
   })
-
   router.delete("/api/:id/comment/:comment_id/delete", (req,res)=>{//deleting comments from the parent route
     deleteComment(req.params.comment_id)
     .then((result) =>{
@@ -191,25 +187,23 @@ module.exports = (knex) => {
       console.log(err)
     })
   })
-
-  router.get("/api/all", /* checkAuth, */ (req, res, next)=>{ //API - json
-    // console.log("this is the checkAuth =>>>> ", checkAuth)
-
+  router.get("/api/all", /*checkAuth,*/    (req, res, next)=>{ //API - json
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    // console.log("testing ", checkAuth)
+    // console.log(req.userData.iat)
+    // localStorage.setItem("token", req.userData.iat );
+
     knex('routes')
     .leftJoin('comments', 'routes.id', 'comments.route_id')
       .leftJoin('ratings', 'routes.id', 'ratings.route_id')
         .leftJoin('users_table', 'comments.user_id', 'users_table.id')
           .leftJoin('mapsdata', 'routes.id','mapsdata.route_id')
             .leftJoin('places', 'mapsdata.id', 'places.map_id')
-      .select('places.place_id as place_id','mapsdata.id as mapsdata','users_table.name as user_name', 'routes.id as route_id','routes.description' ,'routes.name', 'routes.walk_time', 'comments.comment', 'ratings.rating as rating')
+              .leftJoin('starts', 'mapsdata.id', 'starts.map_id')
+                .leftJoin('ends', 'mapsdata.id', 'ends.map_id')
+      .select('ends.longitude as ELong', 'ends.latitude as ELati','starts.latitude as SLati', 'starts.longitude as SLong','places.place_id as place_id','mapsdata.id as mapsdata','users_table.name as user_name', 'routes.id as route_id','routes.description' ,'routes.name', 'routes.walk_time', 'comments.comment', 'ratings.rating as rating')
     .then((result) => {
-      // console.log("to enviado o result assim ===> ", result)
       const refactoredList = refactList(result)
-      // console.log(refactoredList)
-      // console.log(refactoredList)
           res.json(refactoredList)
         })
     .catch(function(err){
@@ -217,7 +211,6 @@ module.exports = (knex) => {
           res.send(err)
     })
   })
-
   postComment = (data, route_id) =>{
     console.log("receiving data like this ",data)
     return knex('comments')
@@ -228,17 +221,14 @@ module.exports = (knex) => {
       })
   }
   router.post('/api/:id/comment/new', (req, res) => {// Posting a new comment whitin a route
-    
-    console.log("NEW COMMENT ", req.body)
-
     postComment(req.body, req.params.id)
       .then((result)=>{
         res.redirect(`/routes/api/all`)
-      }).catch(err=>{
+      })
+      .catch(err=>{
         console.log(err)
       })
   })
-
   router.delete("/api/:id/delete", (req,res)=>{ //deleting a route
     deleteRoute(req.params.id)
     .then((result) =>{
@@ -247,7 +237,6 @@ module.exports = (knex) => {
       
     })
   })
-
   getRoute = (id) => {
       return knex('routes')
       .from('routes', 'comments')
@@ -257,7 +246,6 @@ module.exports = (knex) => {
         return response;
       })
   }  
-
   router.get("/api/:id", (req,res) => { //get one route at a time
     knex('routes')
     .leftJoin('comments', 'routes.id', 'comments.route_id')
@@ -275,14 +263,12 @@ module.exports = (knex) => {
           res.send(err)
         });
   });
-
   router.put("/api/:id/edit", (req, res)=>{ // Updating a route
     updateRoute(req.params.id, req.body)
     .then((result)=>{
       res.send(200).json(result)
     })
   })
-
   router.get("/", (req,res) => { //root route
      knex('routes')
       .join('comments', 'routes.id', 'comments.route_id')
@@ -296,39 +282,28 @@ module.exports = (knex) => {
               res.send(err)
           })
   })
-
   router.get("/:id", (req,res) => {
-      // console.log(req.params.id)
       getRoute(req.params.id)
-
         .then((result) => {
-          // console.log(result)
           res.render('showRoute', {result: result})
-          // console.log(result)
         })
         .catch(function(err){
           res.send(err)
         });
   });
-
   router.delete("/:id/delete", (req,res)=>{
     deleteRoute(req.params.id)
     .then((result) =>{
-      // console.log(result)
       res.redirect('/routes')
-      
     })
   })
-
   router.put("/:id/edit", (req, res)=>{
     updateRoute(req.params.id, req.body)
     .then((result)=>{
       res.redirect("/")
     })
   })
-
   router.post('/new' , (req,res) =>{
-    // console.log(req.body)
     postRoute(req.body)
       .then((result) => {
         res.redirect('/routes')
@@ -337,6 +312,73 @@ module.exports = (knex) => {
         res.send(err)
       })
   })
+
+  addStartingPoint = (route_id, map_id, data) =>{
+    console.log("receiving data like this ", data, map_id)
+    return knex('starts')
+        .insert({
+          longitude: data.longitude,
+          latitude: data.latitude,
+          map_id: map_id
+        })
+        .catch(err=>{
+          console.log(err)
+        })
+  }
+
+
+  router.post('/api/:id/map/:map_id/start/new', (req, res) => {
+    addStartingPoint(req.params.id, req.params.map_id, req.body)
+      .then(result=>{
+        res.send(202)
+      })
+      .catch(err=>{
+        console.log(err)
+      })
+  })
+
+  addEndingPoint = (route_id, map_id, data) =>{
+    console.log("receiving data like this ", data, map_id)
+    return knex('ends')
+        .insert({
+          longitude: data.longitude,
+          latitude: data.latitude,
+          map_id: map_id
+        })
+        .catch(err=>{
+          console.log(err)
+        })
+  }
+
+  router.post('/api/:id/map/:map_id/end/new', (req, res) => {
+    addEndingPoint(req.params.id, req.params.map_id, req.body)
+      .then(result=>{
+        res.send(202)
+      })
+      .catch(err=>{
+        console.log(err)
+      })
+  })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   return router
 }
