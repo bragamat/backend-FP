@@ -57,9 +57,7 @@ module.exports = (knex) => {
         console.log(err)
       })
   }
-
   postRoute = (data) =>{
-    // console.log('WTFFFF ', data)
     return knex('routes')
     .insert({
       name: data.name,
@@ -71,8 +69,7 @@ module.exports = (knex) => {
       return response;
     }).catch((err)=>{
       console.log("coming from postRoute ", err)
-    })
-    
+    })   
   }
   deleteRoute = (id) =>{
     return knex
@@ -107,11 +104,8 @@ module.exports = (knex) => {
         haveSeenIt[route.route_id].ratings.push(route.ratings);
         haveSeenIt[route.route_id].mapsdata.push(route.place_id);
         haveSeenIt[route.route_id].waypoint.push({[route.WLat]: [route.WLong]});
-
-
       } else {
-
-        haveSeenIt[route.route_id] = {
+       haveSeenIt[route.route_id] = {
           id: route.route_id,
           name: route.name,
           description: route.description,
@@ -208,7 +202,7 @@ module.exports = (knex) => {
       console.log(err)
     })
   })
-  router.get("/api/all", /*checkAuth,*/    (req, res, next)=>{ //API - json
+  router.get("/api/all", checkAuth,    (req, res, next)=>{ //API - json
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     // console.log(req.userData.iat)
@@ -254,9 +248,10 @@ module.exports = (knex) => {
   router.delete("/api/:id/delete", (req,res)=>{ //deleting a route
     deleteRoute(req.params.id)
     .then((result) =>{
-      // console.log(result)
-      res.json(result)
-      
+      res.json(result) 
+    })
+    .catch(err=>{
+      console.log(err)
     })
   })
   getRoute = (id) => {
@@ -268,7 +263,6 @@ module.exports = (knex) => {
         return response;
       })
   }  
-
   router.get("/api/:id", (req,res) => { //get one route at a time
     knex('routes')
     .leftJoin('comments', 'routes.id', 'comments.route_id')
@@ -338,7 +332,6 @@ module.exports = (knex) => {
         res.send(err)
       })
   })
-
   addStartingPoint = (route_id, map_id, data) =>{
     console.log("receiving data like this ", data, map_id)
     return knex('starts')
@@ -360,7 +353,6 @@ module.exports = (knex) => {
         console.log(err)
       })
   })
-
   deleteStart = (id) =>{
     return knex
     .select()
@@ -371,7 +363,6 @@ module.exports = (knex) => {
       console.log(err)
     })
   }
-
   router.delete('/api/:id/map/:map_id/start/:start_id/delete', (req, res) => {
     deleteStart(req.params.start_id)
       .then(result=>{
@@ -381,7 +372,6 @@ module.exports = (knex) => {
         console.log(err)
       })
   })
-
   addEndingPoint = (route_id, map_id, data) =>{
     console.log("receiving data like this ", data, map_id)
     return knex('ends')
@@ -394,7 +384,6 @@ module.exports = (knex) => {
           console.log(err)
         })
   }
-
   router.post('/api/:id/map/:map_id/end/new', (req, res) => {
     addEndingPoint(req.params.id, req.params.map_id, req.body)
       .then(result=>{
@@ -404,7 +393,6 @@ module.exports = (knex) => {
         console.log(err)
       })
   })
-
   deleteEnd = (map_id, id) =>{
     return knex
     .select()
@@ -415,7 +403,6 @@ module.exports = (knex) => {
       console.log(err)
     })
   }
-
   router.delete('/api/:id/map/:map_id/end/:end_id/delete', (req,res) =>{
     deleteEnd(req.params.map_id, req.params.end_id)
       .then(result =>{
@@ -425,7 +412,6 @@ module.exports = (knex) => {
         console.log(err)
       })
   })
-
   addWayPoints = (map_id, data) =>{
     return knex('waypoints')
       .insert({
@@ -437,7 +423,6 @@ module.exports = (knex) => {
         console.log(err)
       })
   }
-
   router.post('/api/:id/map/:map_id/waypoint/new', (req,res) =>{
     addWayPoints(req.params.map_id, req.body)
       .then(result =>{
@@ -447,7 +432,6 @@ module.exports = (knex) => {
         console.log(err)
       })
   })
-
   deleteWayPoints = (map_id, id) =>{
     return knex
       .select()
@@ -458,7 +442,6 @@ module.exports = (knex) => {
         console.log(err)
       })
   }
-
   router.delete('/api/:id/map/:map_id/waypoint/:waypoint_id/delete', (req,res) =>{
     deleteWayPoints(req.params.map_id, req.params.waypoint_id)
       .then(result =>{
@@ -468,7 +451,6 @@ module.exports = (knex) => {
         console.log(err)
       })
   })
-
   addMarker = (map_id, data, file) =>{
     return knex('route_markers')
       .insert({
@@ -478,8 +460,6 @@ module.exports = (knex) => {
         picture: file.path
       })
   }
-
-
   router.post('/api/:id/map/:map_id/marker/new', upload.single('picture'), (req, res)=>{
     addMarker(req.params.map_id, req.body, req.file)
       .then(result => {
@@ -488,9 +468,7 @@ module.exports = (knex) => {
       .catch(err => {
         console.log(err)
       })
-
   })
-
   deleteMarker = (id)=>{
     return knex
     .select()
@@ -501,7 +479,6 @@ module.exports = (knex) => {
       console.log(err)
     })
   }
-
   router.delete('/api/:id/map/:map_id/marker/:marker_id/delete', upload.single('picture'), (req, res)=>{
     deleteMarker(req.params.marker_id)
       .then(result => {
@@ -510,23 +487,7 @@ module.exports = (knex) => {
       .catch(err => {
         console.log(err)
       })
-
   })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   return router
 }
 
