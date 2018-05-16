@@ -104,6 +104,7 @@ module.exports = (knex) => {
         haveSeenIt[route.route_id].ratings.push(route.ratings);
         haveSeenIt[route.route_id].mapsdata.push(route.place_id);
         haveSeenIt[route.route_id].waypoint.push({[route.WLat]: [route.WLong]});
+        haveSeenIt[route.route_id].markers.push({[route.markersLat]: [route.markersLong]});
       } else {
        haveSeenIt[route.route_id] = {
           id: route.route_id,
@@ -113,11 +114,16 @@ module.exports = (knex) => {
           mapsdata_id: route.mapsdata,
           starts: [route.SLati, route.SLong],
           ends: [route.ELati, route.ELong],
-          waypoint: [{[route.WLat]: [route.WLong]}], // hard-code
+          markers: [{
+            [route.markersLat]:[route.markersLong]
+          }],
+          waypoint: [{
+          [route.WLat]: [route.WLong]
+          }], // hard-code
           mapsdata: [route.place_id],
           comments: [{
-            [route.user_name]: [route.comment]}
-            ],
+            [route.user_name]: [route.comment]
+          }],
           ratings: [route.rating]
         }
       }
@@ -148,6 +154,14 @@ module.exports = (knex) => {
                 }  
               }); 
             haveSeenIt[item].waypoint = haveSeenIt[item].waypoint.filter(x => x) 
+          }
+          else if (key == 'markers'){
+            haveSeenIt[item].markers.forEach((marker, index) =>{
+                if(Object.keys(marker) == 'null'){
+                  delete haveSeenIt[item].markers[index]
+                }  
+              }); 
+            haveSeenIt[item].markers = haveSeenIt[item].markers.filter(x => x) 
           }
           haveSeenIt[item].comments = haveSeenIt[item].comments.filter( x => x) 
         }
@@ -202,7 +216,7 @@ module.exports = (knex) => {
       console.log(err)
     })
   })
-  router.get("/api/all", checkAuth,    (req, res, next)=>{ //API - json
+  router.get("/api/all", /*checkAuth,  */  (req, res, next)=>{ //API - json
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     // console.log(req.userData.iat)
@@ -217,7 +231,8 @@ module.exports = (knex) => {
               .leftJoin('starts', 'mapsdata.id', 'starts.map_id')
                 .leftJoin('ends', 'mapsdata.id', 'ends.map_id')
                   .leftJoin('waypoints', 'mapsdata.id', 'waypoints.map_id')
-      .select('waypoints.latitude as WLat','waypoints.longitude as WLong','ends.longitude as ELong', 'ends.latitude as ELati','starts.latitude as SLati', 'starts.longitude as SLong','places.place_id as place_id','mapsdata.id as mapsdata','users_table.name as user_name', 'routes.id as route_id','routes.description' ,'routes.name', 'routes.walk_time', 'comments.comment', 'ratings.rating as rating')
+                    .leftJoin('route_markers', 'mapsdata.id', 'route_markers.map_id')
+      .select('route_markers.latitude as markersLat' ,'route_markers.longitude as markersLong','waypoints.latitude as WLat','waypoints.longitude as WLong','ends.longitude as ELong', 'ends.latitude as ELati','starts.latitude as SLati', 'starts.longitude as SLong','places.place_id as place_id','mapsdata.id as mapsdata','users_table.name as user_name', 'routes.id as route_id','routes.description' ,'routes.name', 'routes.walk_time', 'comments.comment', 'ratings.rating as rating')
     .then((result) => {
       const refactoredList = refactList(result)
           res.json(refactoredList)
@@ -273,7 +288,8 @@ module.exports = (knex) => {
               .leftJoin('starts', 'mapsdata.id', 'starts.map_id')
                 .leftJoin('ends', 'mapsdata.id', 'ends.map_id')
                   .leftJoin('waypoints', 'mapsdata.id', 'waypoints.map_id')
-      .select('waypoints.latitude as WLat','waypoints.longitude as WLong','ends.longitude as ELong', 'ends.latitude as ELati','starts.latitude as SLati', 'starts.longitude as SLong','places.place_id as place_id','mapsdata.id as mapsdata','users_table.name as user_name', 'routes.id as route_id','routes.description' ,'routes.name', 'routes.walk_time', 'comments.comment', 'ratings.rating as rating')
+       .leftJoin('route_markers', 'mapsdata.id', 'route_markers.map_id')
+      .select('route_markers.latitude as markersLat' ,'route_markers.longitude as markersLong','waypoints.latitude as WLat','waypoints.longitude as WLong','ends.longitude as ELong', 'ends.latitude as ELati','starts.latitude as SLati', 'starts.longitude as SLong','places.place_id as place_id','mapsdata.id as mapsdata','users_table.name as user_name', 'routes.id as route_id','routes.description' ,'routes.name', 'routes.walk_time', 'comments.comment', 'ratings.rating as rating')
       .where('routes.id', req.params.id)
     .then((result) => {
       const refactoredList = refactList(result)
