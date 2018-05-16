@@ -53,6 +53,8 @@ app.use(bodyParser.urlencoded({
 
 app.use(express.static("public"));
 app.use('/uploads',express.static("uploads"));
+app.use('/markers',express.static("markers"));
+
 
 
 // Mount all resource routes

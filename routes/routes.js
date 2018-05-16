@@ -5,7 +5,17 @@ const express = require('express')
 const router = express.Router()
 const jwt = require('jsonwebtoken')
 const checkAuth = require('../middleware/check-auth.js')
+const multer = require('multer')
 
+const storage = multer.diskStorage({
+  destination: function(req, file, cb) {
+    cb(null, 'markers/');
+  },
+  filename: function(req, file, cb){
+    cb(null, new Date().toISOString() + file.originalname);
+  }
+})
+const upload = multer({ storage });
 
 module.exports = (knex) => {
 
@@ -266,8 +276,11 @@ module.exports = (knex) => {
         .leftJoin('users_table', 'comments.user_id', 'users_table.id')
           .leftJoin('mapsdata', 'routes.id','mapsdata.route_id')
             .leftJoin('places', 'mapsdata.id', 'places.map_id')
-          .where('routes.id', req.params.id)
-        .select('places.place_id as place_id','mapsdata.id as mapsdata','users_table.name as user_name', 'routes.id as route_id','routes.description' ,'routes.name', 'routes.walk_time', 'comments.comment', 'ratings.rating as rating')
+              .leftJoin('starts', 'mapsdata.id', 'starts.map_id')
+                .leftJoin('ends', 'mapsdata.id', 'ends.map_id')
+                  .leftJoin('waypoints', 'mapsdata.id', 'waypoints.map_id')
+      .select('waypoints.latitude as WLat','waypoints.longitude as WLong','ends.longitude as ELong', 'ends.latitude as ELati','starts.latitude as SLati', 'starts.longitude as SLong','places.place_id as place_id','mapsdata.id as mapsdata','users_table.name as user_name', 'routes.id as route_id','routes.description' ,'routes.name', 'routes.walk_time', 'comments.comment', 'ratings.rating as rating')
+      .where('routes.id', req.params.id)
     .then((result) => {
       const refactoredList = refactList(result)
           res.json(refactoredList)
@@ -338,8 +351,6 @@ module.exports = (knex) => {
           console.log(err)
         })
   }
-
-
   router.post('/api/:id/map/:map_id/start/new', (req, res) => {
     addStartingPoint(req.params.id, req.params.map_id, req.body)
       .then(result=>{
@@ -350,8 +361,8 @@ module.exports = (knex) => {
       })
   })
 
-  deleteStart = (, id) =>{
-  return knex
+  deleteStart = (id) =>{
+    return knex
     .select()
     .from('starts')
     .where('id', '=', id)
@@ -395,7 +406,7 @@ module.exports = (knex) => {
   })
 
   deleteEnd = (map_id, id) =>{
-  return knex
+    return knex
     .select()
     .from('ends')
     .where('id', '=', id)
@@ -415,7 +426,6 @@ module.exports = (knex) => {
       })
   })
 
-
   addWayPoints = (map_id, data) =>{
     return knex('waypoints')
       .insert({
@@ -428,36 +438,95 @@ module.exports = (knex) => {
       })
   }
 
-router.post('/api/:id/map/:map_id/waypoint/new', (req,res) =>{
-  addWayPoints(req.params.map_id, req.body)
-    .then(result =>{
-      res.send(200)
-    })
-    .catch(err=>{
-      console.log(err)
-    })
-})
+  router.post('/api/:id/map/:map_id/waypoint/new', (req,res) =>{
+    addWayPoints(req.params.map_id, req.body)
+      .then(result =>{
+        res.send(200)
+      })
+      .catch(err=>{
+        console.log(err)
+      })
+  })
 
-deleteWayPoints = (map_id, id) =>{
-  return knex
+  deleteWayPoints = (map_id, id) =>{
+    return knex
+      .select()
+      .from('waypoints')
+      .where('id', '=', id)
+      .delete()
+      .catch(err=>{
+        console.log(err)
+      })
+  }
+
+  router.delete('/api/:id/map/:map_id/waypoint/:waypoint_id/delete', (req,res) =>{
+    deleteWayPoints(req.params.map_id, req.params.waypoint_id)
+      .then(result =>{
+        res.send(200)
+      })
+      .catch(err=>{
+        console.log(err)
+      })
+  })
+
+  addMarker = (map_id, data, file) =>{
+    return knex('route_markers')
+      .insert({
+        longitude: data.longitude,
+        latitude: data.latitude,
+        map_id: map_id,
+        picture: file.path
+      })
+  }
+
+
+  router.post('/api/:id/map/:map_id/marker/new', upload.single('picture'), (req, res)=>{
+    addMarker(req.params.map_id, req.body, req.file)
+      .then(result => {
+        res.send(200)
+      })
+      .catch(err => {
+        console.log(err)
+      })
+
+  })
+
+  deleteMarker = (id)=>{
+    return knex
     .select()
-    .from('waypoints')
-    .where('id', '=', id)
+    .from('route_markers')
+    .where('id', id)
     .delete()
     .catch(err=>{
       console.log(err)
     })
-}
+  }
 
-router.delete('/api/:id/map/:map_id/waypoint/:waypoint_id/delete', (req,res) =>{
-  deleteWayPoints(req.params.map_id, req.params.waypoint_id)
-    .then(result =>{
-      res.send(200)
-    })
-    .catch(err=>{
-      console.log(err)
-    })
-})
+  router.delete('/api/:id/map/:map_id/marker/:marker_id/delete', upload.single('picture'), (req, res)=>{
+    deleteMarker(req.params.marker_id)
+      .then(result => {
+        res.send(200)
+      })
+      .catch(err => {
+        console.log(err)
+      })
+
+  })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   return router
 }
 
