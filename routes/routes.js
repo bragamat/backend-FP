@@ -24,7 +24,7 @@ module.exports = (knex) => {
     return knex
       .select('*').from('routes')
       .then((response) => {
-        const users = [] 
+        const users = []
         for (let i = 0; i < response.length; i++) {
          let comments = []
           getComments(response[i].id)
@@ -42,7 +42,7 @@ module.exports = (knex) => {
             }
             users.push(info)
         }
-        
+
         return users
       })
       .catch((err)=>{
@@ -61,7 +61,7 @@ module.exports = (knex) => {
       return response;
     }).catch((err)=>{
       console.log("coming from postRoute ", err)
-    })   
+    })
   }
   deleteRoute = (id) =>{
     return knex
@@ -103,7 +103,7 @@ module.exports = (knex) => {
           mapsdata_id: route.mapsdata,
           starts: [route.SLati, route.SLong],
           ends: [route.ELati, route.ELong],
-          markers: 
+          markers:
           [
             {
               [route.markersLat]: [route.markersLong]
@@ -112,25 +112,25 @@ module.exports = (knex) => {
           mapsdata: [route.place_id],
         }
       }
-    }); 
+    });
       for(let item in haveSeenIt){
         for(let key in haveSeenIt[item]){
           if(key == 'mapsdata'){
-            haveSeenIt[item].mapsdata = haveSeenIt[item].mapsdata.filter(x => x) 
+            haveSeenIt[item].mapsdata = haveSeenIt[item].mapsdata.filter(x => x)
           } else if (key == 'starts'){
-            haveSeenIt[item].starts = haveSeenIt[item].starts.filter(x => x) 
+            haveSeenIt[item].starts = haveSeenIt[item].starts.filter(x => x)
 
           } else if (key == 'ends'){
-            haveSeenIt[item].ends = haveSeenIt[item].ends.filter(x => x) 
+            haveSeenIt[item].ends = haveSeenIt[item].ends.filter(x => x)
 
-          } 
+          }
           else if (key == 'markers'){
             haveSeenIt[item].markers.forEach((marker, index) =>{
                 if(Object.keys(marker) == 'null' || undefined){
                   delete haveSeenIt[item].markers[index]
-                }  
-              }); 
-            haveSeenIt[item].markers = haveSeenIt[item].markers.filter(x => x) 
+                }
+              });
+            haveSeenIt[item].markers = haveSeenIt[item].markers.filter(x => x)
           }
         }
       }
@@ -171,7 +171,7 @@ module.exports = (knex) => {
   router.post('/api/map/:id/new', (req,res)=>{ //Adding places to the map
     postMapRoute(req.body, req.params.id)
       .then((result)=>{
-        res.send(200) 
+        res.send(200)
       }).catch((err)=>{
         console.log(err)
       })
@@ -179,7 +179,7 @@ module.exports = (knex) => {
   router.delete("/api/:id/comment/:comment_id/delete", (req,res)=>{//deleting comments from the parent route
     deleteComment(req.params.comment_id)
     .then((result) =>{
-      res.json(result)      
+      res.json(result)
     }).catch(err=>{
       console.log(err)
     })
@@ -201,26 +201,26 @@ module.exports = (knex) => {
                 .leftJoin('ends', 'mapsdata.id', 'ends.map_id')
                   // .leftJoin('waypoints', 'mapsdata.id', 'waypoints.map_id')
                     .leftJoin('route_markers', 'mapsdata.id', 'route_markers.map_id')
-      .select(['routes.id as route_id',
+      .select('routes.id as route_id',
               'route_markers.latitude as markersLat' ,
               'route_markers.longitude as markersLong',
               // 'waypoints.latitude as WLat',
               // 'waypoints.longitude as WLong',
-              'ends.longitude as ELong', 
+              'ends.longitude as ELong',
               'ends.latitude as ELati',
-              'starts.latitude as SLati', 
+              'starts.latitude as SLati',
               'starts.longitude as SLong',
               // 'places.place_id as place_id',
               'mapsdata.id as mapsdata',
-              'users_table.name as user_name', 
+              'users_table.name as user_name',
               'routes.description' ,
-              'routes.name', 
-              'routes.walk_time', 
-              'comments.comment', 
+              'routes.name',
+              'routes.walk_time',
+              'comments.comment',
               'ratings.rating as rating',
-              
 
-              ])
+
+              )
 
     .then((result) => {
       const refactoredList = refactList(result)
@@ -253,7 +253,7 @@ module.exports = (knex) => {
   router.delete("/api/:id/delete", (req,res)=>{ //deleting a route
     deleteRoute(req.params.id)
     .then((result) =>{
-      res.json(result) 
+      res.json(result)
     })
     .catch(err=>{
       console.log(err)
@@ -267,7 +267,7 @@ module.exports = (knex) => {
       .then(function (response) {
         return response;
       })
-  }  
+  }
   router.get("/api/:id", (req,res) => { //get one route at a time
     knex('routes')
     .leftJoin('comments', 'routes.id', 'comments.route_id')
@@ -283,17 +283,17 @@ module.exports = (knex) => {
               'route_markers.longitude as markersLong',
               'waypoints.latitude as WLat',
               'waypoints.longitude as WLong','ends.longitude as ELong',
-               'ends.latitude as ELati','starts.latitude as SLati', 
+               'ends.latitude as ELati','starts.latitude as SLati',
                'starts.longitude as SLong','places.place_id as place_id',
                'mapsdata.id as mapsdata','users_table.name as user_name',
-                'routes.id as route_id','routes.description' ,'routes.name', 
-                'routes.walk_time', 
-                'comments.comment', 
+                'routes.id as route_id','routes.description' ,'routes.name',
+                'routes.walk_time',
+                'comments.comment',
                 'ratings.rating as rating')
       .where('routes.id', req.params.id)
     .then((result) => {
-      // const refactoredList = refactList(result)
-          res.json(result)
+      const refactoredList = refactList(result)
+          res.json(refactoredList)
         })
         .catch(function(err){
           res.send(err)
@@ -525,5 +525,3 @@ module.exports = (knex) => {
   })
   return router
 }
-
-
