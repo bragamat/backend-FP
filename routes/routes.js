@@ -19,15 +19,7 @@ const upload = multer({ storage });
 
 module.exports = (knex) => {
 
-  getComments = (id) =>{
-    return new Promise(function (resolve, reject){
-      knex
-        .select('comment')
-        .from('comments')
-        .where('route_id', id)
-        return resolve();
-    })
-  }
+
   getRoutes = () => { //with ratings
     return knex
       .select('*').from('routes')
@@ -100,10 +92,7 @@ module.exports = (knex) => {
     const haveSeenIt = {}
     list.forEach((route, index) =>{
       if(haveSeenIt[route.route_id]){
-        haveSeenIt[route.route_id].comments.push({[route.user_name]: [route.comment]});
-        haveSeenIt[route.route_id].ratings.push(route.ratings);
         haveSeenIt[route.route_id].mapsdata.push(route.place_id);
-        haveSeenIt[route.route_id].waypoint.push({[route.WLat]: [route.WLong]});
         haveSeenIt[route.route_id].markers.push({[route.markersLat]: [route.markersLong]});
       } else {
        haveSeenIt[route.route_id] = {
@@ -114,17 +103,13 @@ module.exports = (knex) => {
           mapsdata_id: route.mapsdata,
           starts: [route.SLati, route.SLong],
           ends: [route.ELati, route.ELong],
-          markers: [{
-            [route.markersLat]:[route.markersLong]
-          }],
-          waypoint: [{
-          [route.WLat]: [route.WLong]
-          }], // hard-code
+          markers: 
+          [
+            {
+              [route.markersLat]: [route.markersLong]
+            }
+          ],
           mapsdata: [route.place_id],
-          comments: [{
-            [route.user_name]: [route.comment]
-          }],
-          ratings: [route.rating]
         }
       }
     }); 
@@ -132,38 +117,21 @@ module.exports = (knex) => {
         for(let key in haveSeenIt[item]){
           if(key == 'mapsdata'){
             haveSeenIt[item].mapsdata = haveSeenIt[item].mapsdata.filter(x => x) 
-          } else if (key == 'ratings'){
-            haveSeenIt[item].ratings = haveSeenIt[item].ratings.filter(x => x) 
-          } else if (key == 'comments'){
-             haveSeenIt[item].comments.forEach((comment, index) =>{
-                if(Object.keys(comment) == 'null'){
-                  delete haveSeenIt[item].comments[index]
-                }  
-              }); 
           } else if (key == 'starts'){
             haveSeenIt[item].starts = haveSeenIt[item].starts.filter(x => x) 
 
           } else if (key == 'ends'){
             haveSeenIt[item].ends = haveSeenIt[item].ends.filter(x => x) 
 
-          } else if (key == 'waypoint'){
-
-            haveSeenIt[item].waypoint.forEach((point, index) =>{
-                if(Object.keys(point) == 'null'){
-                  delete haveSeenIt[item].waypoint[index]
-                }  
-              }); 
-            haveSeenIt[item].waypoint = haveSeenIt[item].waypoint.filter(x => x) 
-          }
+          } 
           else if (key == 'markers'){
             haveSeenIt[item].markers.forEach((marker, index) =>{
-                if(Object.keys(marker) == 'null'){
+                if(Object.keys(marker) == 'null' || undefined){
                   delete haveSeenIt[item].markers[index]
                 }  
               }); 
             haveSeenIt[item].markers = haveSeenIt[item].markers.filter(x => x) 
           }
-          haveSeenIt[item].comments = haveSeenIt[item].comments.filter( x => x) 
         }
       }
     return haveSeenIt;
@@ -225,14 +193,35 @@ module.exports = (knex) => {
     knex('routes')
     .leftJoin('comments', 'routes.id', 'comments.route_id')
       .leftJoin('ratings', 'routes.id', 'ratings.route_id')
-        .leftJoin('users_table', 'comments.user_id', 'users_table.id')
+        .leftJoin('users_table', 'routes.user_id', 'users_table.id')
+          // .leftJoin('users_table', 'comments.user_id', 'users_table.id')
           .leftJoin('mapsdata', 'routes.id','mapsdata.route_id')
-            .leftJoin('places', 'mapsdata.id', 'places.map_id')
+            // .leftJoin('places', 'mapsdata.id', 'places.map_id')
               .leftJoin('starts', 'mapsdata.id', 'starts.map_id')
                 .leftJoin('ends', 'mapsdata.id', 'ends.map_id')
-                  .leftJoin('waypoints', 'mapsdata.id', 'waypoints.map_id')
+                  // .leftJoin('waypoints', 'mapsdata.id', 'waypoints.map_id')
                     .leftJoin('route_markers', 'mapsdata.id', 'route_markers.map_id')
-      .select('route_markers.latitude as markersLat' ,'route_markers.longitude as markersLong','waypoints.latitude as WLat','waypoints.longitude as WLong','ends.longitude as ELong', 'ends.latitude as ELati','starts.latitude as SLati', 'starts.longitude as SLong','places.place_id as place_id','mapsdata.id as mapsdata','users_table.name as user_name', 'routes.id as route_id','routes.description' ,'routes.name', 'routes.walk_time', 'comments.comment', 'ratings.rating as rating')
+      .select(['routes.id as route_id',
+              'route_markers.latitude as markersLat' ,
+              'route_markers.longitude as markersLong',
+              // 'waypoints.latitude as WLat',
+              // 'waypoints.longitude as WLong',
+              'ends.longitude as ELong', 
+              'ends.latitude as ELati',
+              'starts.latitude as SLati', 
+              'starts.longitude as SLong',
+              // 'places.place_id as place_id',
+              'mapsdata.id as mapsdata',
+              'users_table.name as user_name', 
+              'routes.description' ,
+              'routes.name', 
+              'routes.walk_time', 
+              'comments.comment', 
+              'ratings.rating as rating',
+              
+
+              ])
+
     .then((result) => {
       const refactoredList = refactList(result)
           res.json(refactoredList)
@@ -244,6 +233,7 @@ module.exports = (knex) => {
   })
   postComment = (data, route_id) =>{
     console.log("receiving data like this ",data)
+
     return knex('comments')
       .insert({
         comment: data.comment,
@@ -289,11 +279,21 @@ module.exports = (knex) => {
                 .leftJoin('ends', 'mapsdata.id', 'ends.map_id')
                   .leftJoin('waypoints', 'mapsdata.id', 'waypoints.map_id')
        .leftJoin('route_markers', 'mapsdata.id', 'route_markers.map_id')
-      .select('route_markers.latitude as markersLat' ,'route_markers.longitude as markersLong','waypoints.latitude as WLat','waypoints.longitude as WLong','ends.longitude as ELong', 'ends.latitude as ELati','starts.latitude as SLati', 'starts.longitude as SLong','places.place_id as place_id','mapsdata.id as mapsdata','users_table.name as user_name', 'routes.id as route_id','routes.description' ,'routes.name', 'routes.walk_time', 'comments.comment', 'ratings.rating as rating')
+      .select('route_markers.latitude as markersLat' ,
+              'route_markers.longitude as markersLong',
+              'waypoints.latitude as WLat',
+              'waypoints.longitude as WLong','ends.longitude as ELong',
+               'ends.latitude as ELati','starts.latitude as SLati', 
+               'starts.longitude as SLong','places.place_id as place_id',
+               'mapsdata.id as mapsdata','users_table.name as user_name',
+                'routes.id as route_id','routes.description' ,'routes.name', 
+                'routes.walk_time', 
+                'comments.comment', 
+                'ratings.rating as rating')
       .where('routes.id', req.params.id)
     .then((result) => {
-      const refactoredList = refactList(result)
-          res.json(refactoredList)
+      // const refactoredList = refactList(result)
+          res.json(result)
         })
         .catch(function(err){
           res.send(err)
@@ -504,6 +504,22 @@ module.exports = (knex) => {
         res.send(200)
       })
       .catch(err => {
+        console.log(err)
+      })
+  })
+
+  getComments = (id) =>{
+    return knex('comments')
+        .leftJoin('users_table', 'comments.user_id', 'users_table.id')
+        .select('users_table.name as user_name','comments.id as comment_id' ,'comments.comment as comment')
+        .where('route_id', id)
+  }
+  router.get('/api/:route_id/comments', (req, res)=>{
+    getComments(req.params.route_id)
+      .then(result=>{
+        res.json(result)
+      })
+      .catch(err=>{
         console.log(err)
       })
   })

@@ -1,19 +1,12 @@
-// import Faker from 'faker'
-var faker = require('faker');
-
-var randomName = faker.name.findName(); // Rowan Nikolaus
-var randomEmail = faker.internet.email(); // Kassandra.Haley@erich.biz
-var randomCard = faker.helpers.createCard(); // random contact card containing many properties
-let limit = 10;
 exports.seed = function(knex, Promise) {
-    return knex('users_table').del()
+    return knex('comments').del()
       .then(function () {
       while (limit > 0){
         console.log("here is the limit ",limit)
         return Promise.all([
-          knex('users_table').insert({name: faker.name.findName(), password: 123}),
-          knex('users_table').insert({name: faker.name.findName(), password: 123}),
-          knex('users_table').insert({name: faker.name.findName(), password: 123}),
+          knex('comments').insert({route_id:1 , comment:'Wow, I hope you can check this path, I found amazing!', user_id: 1}),
+          knex('comments').insert({route_id:2 , comment:'just a tip, DONT DO THIS WALK ON NIGHT TIME', user_id: 2}),
+          knex('comments').insert({route_id:3 , comment:'Did you see that incredible door ?', user_id: 3}),
         ]);
         limit--;
       }      
