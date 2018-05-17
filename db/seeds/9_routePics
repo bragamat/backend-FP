@@ -1,0 +1,13 @@
+
+// exports.seed = function(knex, Promise) {
+//   return knex('comments').del()
+//     .then(function () {
+//       return Promise.all([
+//         knex('comments').insert({}),
+//         knex('comments').insert({}),
+//         knex('comments').insert({}),
+//       ]);
+//     }).catch((err)=>{
+//       console.log("from the 8_routesF", err)
+//     });
+// };
